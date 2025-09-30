@@ -1,41 +1,58 @@
-async function getResults() {
-  const url = document.getElementById("urlInput").value;
-  const output = document.getElementById("output");
+import json
+from datetime import date
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import requests
+from bs4 import BeautifulSoup
 
-  if (!url) {
-    output.textContent = "Please enter a Rightmove URL.";
-    return;
-  }
+app = Flask(__name__)
+CORS(app)
 
-  try {
-    const response = await fetch(`http://127.0.0.1:5000/scrape?url=${encodeURIComponent(url)}`);
-    const data = await response.json();
+HISTORY_FILE = "results_history.json"
 
-    if (data.results) {
-      output.textContent = `Number of results: ${data.results}`;
-      displayHistory(data.history);
-    } else {
-      output.textContent = `Error: ${data.error}`;
-    }
-  } catch (err) {
-    output.textContent = "Failed to connect to backend.";
-  }
-}
+def load_history():
+    try:
+        with open(HISTORY_FILE, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return []
 
-async function loadHistory() {
-  const response = await fetch("http://127.0.0.1:5000/history");
-  const history = await response.json();
-  displayHistory(history);
-}
+def save_history(history):
+    with open(HISTORY_FILE, "w") as f:
+        json.dump(history, f)
 
-function displayHistory(history) {
-  const output = document.getElementById("output");
-  let html = "<h3>Results History:</h3><ul>";
-  history.forEach(entry => {
-    html += `<li>${entry.date}: ${entry.results} results</li>`;
-  });
-  html += "</ul>";
-  output.innerHTML += html;
-}
+@app.route("/scrape", methods=["GET"])
+def scrape():
+    url = request.args.get("url")
+    if not url:
+        return jsonify({"error": "No URL provided"}), 400
 
-window.onload = loadHistory;
+    headers = {"User-Agent": "Mozilla/5.0"}
+    response = requests.get(url, headers=headers)
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    result_count = soup.find("div", class_="ResultsCount_resultsCount__Kqeah")
+
+    if result_count:
+        count_text = result_count.text.strip()
+        today = str(date.today())
+
+        history = load_history()
+        existing = next((entry for entry in history if entry["date"] == today), None)
+
+        if existing:
+            existing["results"] = count_text
+        else:
+            history.append({"date": today, "results": count_text})
+
+        save_history(history)
+        return jsonify({"results": count_text, "history": history})
+    else:
+        return jsonify({"error": "Could not find results count"}), 500
+
+@app.route("/history", methods=["GET"])
+def history():
+    return jsonify(load_history())
+
+if __name__ == "__main__":
+    app.run(debug=True)
