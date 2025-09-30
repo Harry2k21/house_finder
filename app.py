@@ -1,27 +1,41 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import requests
-from bs4 import BeautifulSoup
+async function getResults() {
+  const url = document.getElementById("urlInput").value;
+  const output = document.getElementById("output");
 
-app = Flask(__name__)
-CORS(app)  #allow frontend JS to call backend
+  if (!url) {
+    output.textContent = "Please enter a Rightmove URL.";
+    return;
+  }
 
-@app.route("/scrape", methods=["GET"])
-def scrape():
-    url = request.args.get("url")
-    if not url:
-        return jsonify({"error": "No URL provided"}), 400
+  try {
+    const response = await fetch(`http://127.0.0.1:5000/scrape?url=${encodeURIComponent(url)}`);
+    const data = await response.json();
 
-    headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(url, headers=headers)
+    if (data.results) {
+      output.textContent = `Number of results: ${data.results}`;
+      displayHistory(data.history);
+    } else {
+      output.textContent = `Error: ${data.error}`;
+    }
+  } catch (err) {
+    output.textContent = "Failed to connect to backend.";
+  }
+}
 
-    soup = BeautifulSoup(response.text, "html.parser")
-    result_count = soup.find("div", class_="ResultsCount_resultsCount__Kqeah")
+async function loadHistory() {
+  const response = await fetch("http://127.0.0.1:5000/history");
+  const history = await response.json();
+  displayHistory(history);
+}
 
-    if result_count:
-        return jsonify({"results": result_count.text.strip()})
-    else:
-        return jsonify({"error": "Could not find results count"}), 500
+function displayHistory(history) {
+  const output = document.getElementById("output");
+  let html = "<h3>Results History:</h3><ul>";
+  history.forEach(entry => {
+    html += `<li>${entry.date}: ${entry.results} results</li>`;
+  });
+  html += "</ul>";
+  output.innerHTML += html;
+}
 
-if __name__ == "__main__":
-    app.run(debug=True)
+window.onload = loadHistory;
