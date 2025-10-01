@@ -4,4 +4,50 @@ body {
 
 input, button { 
     padding: 8px; margin: 5px 0; 
+
+}
+
+body { 
+    font-family: Arial, sans-serif; 
+    padding: 20px; 
+}
+
+input, button { 
+    padding: 8px; 
+    margin: 5px 0; 
+}
+
+/* Checklist Section */
+#requirements {
+    margin-top: 20px;
+}
+
+.requirement {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.requirement input[type="text"] {
+    flex: 1;
+    margin: 0 10px;
+    padding: 5px;
+}
+
+.requirement button {
+    margin-left: 5px;
+    cursor: pointer;
+}
+
+#addBtn {
+    background: #0077ff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#addBtn:disabled {
+    background: gray;
+    cursor: not-allowed;
 }
