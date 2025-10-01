@@ -39,3 +39,49 @@ function displayHistory(history) {
 }
 
 window.onload = loadHistory;
+
+// let count = 0;
+// const maxRequirements = 20;
+
+// document.addEventListener("DOMContentLoaded", () => {
+//   loadHistory(); // load scraper history when page opens
+
+//   const addBtn = document.getElementById("addBtn");
+//   const list = document.getElementById("list");
+
+//   if (addBtn) {
+//     addBtn.addEventListener("click", () => {
+//       if (count >= maxRequirements) return;
+//       count++;
+
+//       const reqDiv = document.createElement("div");
+//       reqDiv.className = "requirement";
+
+//       const checkbox = document.createElement("input");
+//       checkbox.type = "checkbox";
+
+//       const textInput = document.createElement("input");
+//       textInput.type = "text";
+//       textInput.placeholder = "Enter requirement...";
+
+//       const delBtn = document.createElement("button");
+//       delBtn.textContent = "❌";
+//       delBtn.onclick = () => {
+//         list.removeChild(reqDiv);
+//         count--;
+//         addBtn.disabled = false;
+//       };
+
+//       reqDiv.appendChild(checkbox);
+//       reqDiv.appendChild(textInput);
+//       reqDiv.appendChild(delBtn);
+
+//       list.appendChild(reqDiv);
+
+//       if (count >= maxRequirements) {
+//         addBtn.disabled = true;
+//       }
+//     });
+//   }
+// });
+
