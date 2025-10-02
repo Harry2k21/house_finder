@@ -1,7 +1,15 @@
+let count = 0;
+const maxRequirements = 20;
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]
+  );
+}
+
 async function getResults() {
   const url = document.getElementById("urlInput").value;
   const output = document.getElementById("output");
-
   if (!url) {
     output.textContent = "Please enter a Rightmove URL.";
     return;
@@ -9,79 +17,146 @@ async function getResults() {
 
   try {
     const response = await fetch(`http://127.0.0.1:5000/scrape?url=${encodeURIComponent(url)}`);
+    if (!response.ok) {
+      const text = await response.text();
+      output.textContent = `Backend error ${response.status}: ${text}`;
+      return;
+    }
+
     const data = await response.json();
 
-    if (data.results) {
+    if (data.results != null) {
       output.textContent = `Number of results: ${data.results}`;
-      displayHistory(data.history);
+      if (data.history) {
+        displayHistory(data.history);
+      } else {
+        loadHistory();
+      }
     } else {
-      output.textContent = `Error: ${data.error}`;
+      output.textContent = `Error: ${data.error || 'Unknown error from backend'}`;
     }
   } catch (err) {
-    output.textContent = "Failed to connect to backend.";
+    console.error('getResults error', err);
+    output.textContent = "Failed to connect to backend. Check console/network.";
   }
 }
 
 async function loadHistory() {
-  const response = await fetch("http://127.0.0.1:5000/history");
-  const history = await response.json();
-  displayHistory(history);
+  try {
+    const response = await fetch("http://127.0.0.1:5000/history");
+    if (!response.ok) {
+      console.error('History fetch failed', response.status);
+      return;
+    }
+    const history = await response.json();
+    displayHistory(history);
+  } catch (err) {
+    console.error('loadHistory error', err);
+  }
 }
 
-function displayHistory(history) {
-  const output = document.getElementById("output");
+function displayHistory(historyData) {
+  const historyEl = document.getElementById("history") || createHistoryEl();
+  const items = Array.isArray(historyData) ? historyData : [historyData];
+
   let html = "<h3>Results History:</h3><ul>";
-  history.forEach(entry => {
-    html += `<li>${entry.date}: ${entry.results} results</li>`;
+  items.forEach(entry => {
+    const date = entry.date || new Date().toLocaleString();
+    const results = (entry.results != null) ? entry.results : '—';
+    html += `<li>${escapeHtml(date)}: ${escapeHtml(results)} results</li>`;
   });
   html += "</ul>";
-  output.innerHTML += html;
+
+  historyEl.innerHTML = html;
 }
 
-window.onload = loadHistory;
+function createHistoryEl() {
+  const el = document.createElement('div');
+  el.id = 'history';
+  const output = document.getElementById('output');
+  output.parentNode.insertBefore(el, output.nextSibling);
+  return el;
+}
 
-// let count = 0;
-// const maxRequirements = 20;
+/* ---------------------------
+   REQUIREMENTS SAVE / LOAD
+---------------------------- */
+function saveRequirements() {
+  const list = document.getElementById("list");
+  const reqs = [];
+  list.querySelectorAll(".requirement").forEach(reqDiv => {
+    const checkbox = reqDiv.querySelector("input[type=checkbox]");
+    const textInput = reqDiv.querySelector("input[type=text]");
+    reqs.push({
+      checked: checkbox.checked,
+      text: textInput.value
+    });
+  });
+  localStorage.setItem("requirements", JSON.stringify(reqs));
+}
 
-// document.addEventListener("DOMContentLoaded", () => {
-//   loadHistory(); // load scraper history when page opens
+function loadRequirements() {
+  const saved = JSON.parse(localStorage.getItem("requirements") || "[]");
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  count = 0;
+  saved.forEach(req => {
+    addRequirement(req.text, req.checked);
+  });
+}
 
-//   const addBtn = document.getElementById("addBtn");
-//   const list = document.getElementById("list");
+function addRequirement(text = "", checked = false) {
+  if (count >= maxRequirements) return;
+  count++;
 
-//   if (addBtn) {
-//     addBtn.addEventListener("click", () => {
-//       if (count >= maxRequirements) return;
-//       count++;
+  const list = document.getElementById("list");
 
-//       const reqDiv = document.createElement("div");
-//       reqDiv.className = "requirement";
+  const reqDiv = document.createElement("div");
+  reqDiv.className = "requirement";
 
-//       const checkbox = document.createElement("input");
-//       checkbox.type = "checkbox";
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = checked;
+  checkbox.addEventListener("change", saveRequirements);
 
-//       const textInput = document.createElement("input");
-//       textInput.type = "text";
-//       textInput.placeholder = "Enter requirement...";
+  const textInput = document.createElement("input");
+  textInput.type = "text";
+  textInput.placeholder = "Enter requirement...";
+  textInput.value = text;
+  textInput.addEventListener("input", saveRequirements);
 
-//       const delBtn = document.createElement("button");
-//       delBtn.textContent = "❌";
-//       delBtn.onclick = () => {
-//         list.removeChild(reqDiv);
-//         count--;
-//         addBtn.disabled = false;
-//       };
+  const delBtn = document.createElement("button");
+  delBtn.textContent = "❌";
+  delBtn.onclick = () => {
+    list.removeChild(reqDiv);
+    count--;
+    document.getElementById("addBtn").disabled = false;
+    saveRequirements();
+  };
 
-//       reqDiv.appendChild(checkbox);
-//       reqDiv.appendChild(textInput);
-//       reqDiv.appendChild(delBtn);
+  reqDiv.appendChild(checkbox);
+  reqDiv.appendChild(textInput);
+  reqDiv.appendChild(delBtn);
 
-//       list.appendChild(reqDiv);
+  list.appendChild(reqDiv);
 
-//       if (count >= maxRequirements) {
-//         addBtn.disabled = true;
-//       }
-//     });
-//   }
-// });
+  if (count >= maxRequirements) {
+    document.getElementById("addBtn").disabled = true;
+  }
 
+  saveRequirements(); // save on add
+}
+
+/* ---------------------------
+   PAGE LOAD
+---------------------------- */
+document.addEventListener("DOMContentLoaded", () => {
+  loadHistory();
+  loadRequirements(); // load saved requirements
+
+  const scrapeBtn = document.getElementById("scrapeBtn");
+  if (scrapeBtn) scrapeBtn.addEventListener("click", getResults);
+
+  const addBtn = document.getElementById("addBtn");
+  if (addBtn) addBtn.addEventListener("click", () => addRequirement());
+});
