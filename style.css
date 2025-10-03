@@ -1,13 +1,4 @@
 body { 
-    font-family: Arial, sans-serif; padding: 20px; 
-}
-
-input, button { 
-    padding: 8px; margin: 5px 0; 
-
-}
-
-body { 
     font-family: Arial, sans-serif; 
     padding: 20px; 
 }
@@ -22,7 +13,7 @@ input, button {
     margin-top: 20px;
 }
 
-.requirement {
+.requirement{
     display: flex;
     align-items: center;
     margin: 5px 0;
@@ -48,6 +39,35 @@ input, button {
 }
 
 #addBtn:disabled {
+    background: gray;
+    cursor: not-allowed;
+}
+
+/* Shortlist Section */
+#shortlist {
+    margin-top: 20px;
+}
+
+.short-item {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.short-item input[type="text"] {
+    flex: 1;
+    margin: 0 10px;
+    padding: 5px;
+}
+
+.short-item button {
+    margin-left: 5px;
+    cursor: pointer;
+}
+
+
+
+#addShortBtn:disabled {
     background: gray;
     cursor: not-allowed;
 }
