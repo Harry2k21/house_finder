@@ -148,15 +148,85 @@ function addRequirement(text = "", checked = false) {
 }
 
 /* ---------------------------
+   SHORTLIST SAVE / LOAD
+---------------------------- */
+let shortlistCount = 0;
+const maxShortlist = 20;
+
+function saveShortlist() {
+  const list = document.getElementById("shortlist");
+  const items = [];
+  list.querySelectorAll(".short-item").forEach(itemDiv => {
+    const textInput = itemDiv.querySelector("input[type=text]");
+    items.push({
+      text: textInput.value
+    });
+  });
+  localStorage.setItem("shortlist", JSON.stringify(items));
+}
+
+function loadShortlist() {
+  const saved = JSON.parse(localStorage.getItem("shortlist") || "[]");
+  const list = document.getElementById("shortlist");
+  list.innerHTML = "";
+  shortlistCount = 0;
+  saved.forEach(item => {
+    addShortlistItem(item.text);
+  });
+}
+
+function addShortlistItem(text = "") {
+  if (shortlistCount >= maxShortlist) return;
+  shortlistCount++;
+
+  const list = document.getElementById("shortlist");
+
+  const itemDiv = document.createElement("div");
+  itemDiv.className = "short-item";
+
+  const textInput = document.createElement("input");
+  textInput.type = "text";
+  textInput.placeholder = "Enter shortlisted item...";
+  textInput.value = text;
+  textInput.addEventListener("input", saveShortlist);
+
+  const delBtn = document.createElement("button");
+  delBtn.textContent = "❌";
+  delBtn.onclick = () => {
+    list.removeChild(itemDiv);
+    shortlistCount--;
+    document.getElementById("addShortBtn").disabled = false;
+    saveShortlist();
+  };
+
+  itemDiv.appendChild(textInput);
+  itemDiv.appendChild(delBtn);
+  list.appendChild(itemDiv);
+
+  if (shortlistCount >= maxShortlist) {
+    document.getElementById("addShortBtn").disabled = true;
+  }
+
+  saveShortlist(); // save on add
+}
+
+
+/* ---------------------------
    PAGE LOAD
 ---------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
   loadHistory();
-  loadRequirements(); // load saved requirements
+  loadRequirements();
+  loadShortlist();
+   // load saved requirements
 
   const scrapeBtn = document.getElementById("scrapeBtn");
   if (scrapeBtn) scrapeBtn.addEventListener("click", getResults);
 
   const addBtn = document.getElementById("addBtn");
   if (addBtn) addBtn.addEventListener("click", () => addRequirement());
+
+  const addShortBtn = document.getElementById("addShortBtn");
+  if (addShortBtn) addShortBtn.addEventListener("click", () => addShortlistItem());
+  
 });
