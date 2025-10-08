@@ -6,4 +6,5 @@ Create UI, Create main search functionality, Create main filter setting, Make Im
 ## Stage 2 - Make saving favourite filters a feature, 
 
 
+
 ## Stage 3 - Login Page, Database for Users
